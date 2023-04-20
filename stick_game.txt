@@ -1,0 +1,240 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+
+
+entity StickGame is
+  port (
+    SW: in std_logic_vector(9 downto 0);
+	 Clk : in std_logic;      --input signal
+    HEX0: out std_logic_vector(6 downto 0);
+    HEX1: out std_logic_vector(6 downto 0);
+    HEX2: out std_logic_vector(6 downto 0);
+    HEX3: out std_logic_vector(6 downto 0);
+    HEX4: out std_logic_vector(6 downto 0);
+    HEX5: out std_logic_vector(6 downto 0);
+    LEDR: out std_logic_vector(9 downto 0)  --output ports
+  );
+end entity StickGame;
+
+
+
+ARCHITECTURE MAIN OF StickGame IS
+
+-- global variable list
+
+signal B: std_logic_vector(1 downto 0) := "00"; -- signal to indicate how many sticks need to be removed
+type t_array is array (0 to 5) of integer;
+
+shared variable my_array : t_array := (1,2,3,4,5,6); -- array of sticks
+begin 
+	program: process (Clk) is 
+	  variable x: std_logic_vector(0 to 6);
+
+	begin
+		 for i in 0 to 5 loop
+			case my_array(i) is
+			  when 0 => x := "1000000";
+			  when 1 => x := "1111001"; 
+			  when 2 => x := "0100100";
+			  when 3 => x := "0110000";
+			  when 4 => x := "0011001";
+			  when 5 => x := "0010010";
+			  when 6 => x := "0000010";
+			  when others => null;
+			end case;
+		
+			case i is 
+			  when 0 => HEX5 <= x; 
+			  when 1 => HEX4 <= x; 
+			  when 2 => HEX3 <= x;
+			  when 3 => HEX2 <= x;
+			  when 4 => HEX1 <= x;
+			  when 5 => HEX0 <= x;
+			  when others => null;
+			end case;
+		 end loop;  -- initialize the the state of the game and shows on the board 
+	 end process program;
+	
+	
+	
+	stick_game: process
+		variable count: integer range 0 to 1:=0; -- control that sticks are removed once in one turn
+		variable temp: integer range 0 to 6; -- used to change the value of the array 
+	begin
+		wait until SW(0 downto 0) = "1" or SW(1 downto 1) = "1"; -- program waits untill SW0 or SW1 is turned on 
+		
+		B<=SW(1 downto 0); -- B gets the state of the switches 
+		if B(1 downto 0) = "01" -- when SW1 is 0 and SW0 is 1. We can remove only one stick 
+		then
+			if SW(9 downto 2) = "00000001" -- SW2 used for reset 
+			then
+				count := 0;		-- means that we can remove the sticks
+			elsif SW(9 downto 2) = "00000100" -- SW4 is on 
+			then
+				if count = 0
+				then
+					temp := my_array(5); 
+					if temp > 0  -- we can remove sticks if only it has positive value 
+					then
+						temp := temp - 1; -- removes one stick 
+						my_array(5) := temp; -- updates the new value 
+					end if;
+				end if;
+				count := 1; -- the turn is over. We cannot remove a stick. 
+			
+			elsif SW(9 downto 2) = "00001000" -- SW5 is on 
+			then
+				if count = 0
+				then
+					temp := my_array(4);
+					if temp > 0
+					then
+						temp := temp - 1;
+						my_array(4) := temp;
+					end if;
+				end if;
+				count := 1;
+				
+			elsif SW(9 downto 2) = "00010000" -- SW6 is on 
+			then
+				if count = 0
+				then
+					temp := my_array(3);
+					if temp > 0
+					then
+						temp := temp - 1;
+						my_array(3) := temp;
+					end if;
+				end if;
+				count := 1;
+			
+			elsif SW(9 downto 2) = "00100000" -- -- SW7 is on 
+			then
+				if count = 0
+				then
+					temp := my_array(2);
+					if temp > 0
+					then
+						temp := temp - 1;
+						my_array(2) := temp;
+					end if;
+				end if;
+				count := 1;
+			
+			elsif SW(9 downto 2) = "01000000" -- SW8 is on 
+			then
+				if count = 0
+				then
+					temp := my_array(1);
+					if temp > 0
+					then
+						temp := temp - 1;
+						my_array(1) := temp;
+					end if;
+				end if;
+				count := 1;
+				
+			elsif SW(9 downto 2) = "10000000" -- SW9 is on 
+			then
+				if count = 0
+				then
+					temp := my_array(0);
+					if temp > 0
+					then
+						temp := temp - 1;
+						my_array(0) := temp;
+					end if;
+				end if;
+				count := 1;
+				
+			end if;
+		elsif B(1 downto 0) = "10" -- SW1 is 1 and SW0 is 0. We can remove 2 sticks. 
+		then
+			if SW(9 downto 2) = "00000001"
+			then
+				count := 0;		
+			elsif SW(9 downto 2) = "00000100" 
+			then
+				if count = 0
+				then
+					temp := my_array(5);
+					if temp > 1 -- to ensure that we will not remove 2 from 1 or 0 
+					then
+						temp := temp - 2;
+						my_array(5) := temp;
+					end if;
+				end if;
+				count := 1;
+			
+			elsif SW(9 downto 2) = "00001000" 
+			then
+				if count = 0
+				then
+					temp := my_array(4);
+					if temp > 1
+					then
+						temp := temp - 2;
+						my_array(4) := temp;
+					end if;
+				end if;
+				count := 1;
+				
+			elsif SW(9 downto 2) = "00010000" 
+			then
+				if count = 0
+				then
+					temp := my_array(3);
+					if temp > 1
+					then
+						temp := temp - 2;
+						my_array(3) := temp;
+					end if;
+				end if;
+				count := 1;
+			
+			elsif SW(9 downto 2) = "00100000" 
+			then
+				if count = 0
+				then
+					temp := my_array(2);
+					if temp > 1
+					then
+						temp := temp - 2;
+						my_array(2) := temp;
+					end if;
+				end if;
+				count := 1;
+			
+			elsif SW(9 downto 2) = "01000000" 
+			then
+				if count = 0
+				then
+					temp := my_array(1);
+					if temp > 1
+					then
+						temp := temp - 2;
+						my_array(1) := temp;
+					end if;
+				end if;
+				count := 1;
+				
+			elsif SW(9 downto 2) = "10000000" 
+			then
+				if count = 0
+				then
+					temp := my_array(0);
+					if temp > 1
+					then
+						temp := temp - 2;
+						my_array(0) := temp;
+					end if;
+				end if;
+				count := 1;
+				
+			end if;
+		end if;
+	end process stick_game;
+
+end MAIN;
